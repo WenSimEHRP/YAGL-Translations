@@ -1,5 +1,5 @@
 # YAGL-Translations
-[中文](docs/readme_zh.md)
+[中文](docs/README_zh.md)
 
 This is a collection of OpenTTD NewGRFs with (Simplified Chinese) translations added after distribution.
 All NewGRFs collected here are encoded in either m4nfo (stations) or nfo.
@@ -11,6 +11,8 @@ OpenTTD is a universal game for everyone, and so are the NewGRFs designed for th
 ## License
 
 All NewGRFs have their own license, and in each folder there would be a copy of the original license. The original changelog and readme (if there is one) would also be included.
+
+yagl is licensed under GPLv3.
 
 ## Contribute
 
