@@ -1,6 +1,8 @@
 import re
 import json
 
+# temp codes, would change later
+
 def ReadFile(path):
     record_match = r'^ *// *Record *#\d*$'
     return_list = []

@@ -13,7 +13,7 @@ Run it with this command;
 ```
 The program should create several png files in `sprites/` and a single `your_file_name.yagl` in the same folder.
 
-After decompiling, you can modify the file as you like, e.g. change all default strings to `woshi liangzhichoa ta nainai` or 
+After decompiling, you can modify the file as you like, e.g. change all default strings to `woshi liangzhichao ta nainai` or 
 ```
 あらっつぁっつぁーやりびだびりんらばりっだんりんらんれんらんどーわばりっかったーぱりっぱりーばりびりびりびりすてんれんらんどんやばりんらんてんらんでーあろーわらばどぅぶどぅぶどぅぶどぅぶでーいぇぶーわでぃっだーりんらんれんらんどーだがたかたかとぅーとぅーでーやどぅー
 ```
