@@ -1,0 +1,6 @@
+sprites/*
+!sprites/*.md
+
+*.grf
+*.yagl
+*.txt

@@ -1,74 +1,80 @@
 import re
-import json
+import sys
+import time
 
-# temp codes, would change later
-
-def ReadFile(path):
-    record_match = r'^ *// *Record *#\d*$'
-    return_list = []
-    record_list = []
-    try:
-        with open(path, 'r') as file:
-            lines = file.readlines()
-            # make a list of indexes of all lines that match the record_match
-            record_index_list = [0]
-            for index,line in enumerate(lines):
-                if re.match(record_match, line):
-                    record_list.extend(re.findall(r'\d+', line))
-                    record_index_list.append(index)
-                    strings = []
-                    for line in lines[record_index_list[-2]:record_index_list[-1]]:
-                        # 分割每一行，取"//"之前的部分，并去除两端的空白
-                        part = line.split('//')[0].strip()
-                        # 只有当part不是空字符串时，才将其添加到strings中
-                        if part != '':
-                            strings.append(part)
-                    return_list.append(strings)
-            # append all lines between the record indexes to the return list
-                
-
-        return return_list, record_list
+def OpenFile(path):
+    try: 
+        with open(path, 'r', encoding="utf-8") as f:
+            return f.readlines()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)
     
-    except FileNotFoundError:
-        print("File not found")
-        return None
+def SplitRecords(input_list):
+    record_match = re.compile(r'^ *// *Record #*\d* *$')
+    index_list = [0] + [index for index, line in enumerate(input_list) if re.match(record_match, line)] + [len(input_list)]
+    return [input_list[index_list[i]:index_list[i+1]] for i in range(len(index_list)-1)]
+
+
+def GetStrings(input_list, include_other_languages = False, add_curly_brackets = True, language_keep_list=['default', 'en_GB', 'en_US']):
+    optional_info_match = re.compile(r'^ *optional_info.*$')
+    string_match = re.compile(r'^ *strings|error_message *<.*> *$')
+
+    def GetOptionalInfo(input_list):
+        return [index for index, sublist in enumerate(input_list) if re.match(optional_info_match, sublist[1])]
     
-def MatchStrings(list):
-    optional_info_match = r'optional_info'
-    error_message_match = r'error_message *<.*default.*> *'
-    strings_match = r'strings *<.*default.*> *'
-    report_list = []
-    for i in range(len(list)):
-        if re.match(optional_info_match, list[i][0]) or re.match(strings_match, list[i][0]) or re.match(error_message_match, list[i][0]):
-            report_list.append(i)
-    print(report_list)
-    return report_list
+    def GetStringsOrError(input_list):
+        return [index for index, sublist in enumerate(input_list) if re.match(string_match, sublist[1])]
+    
+    def ProcessOptionalInfo(input_list):
+        lines = [line.split('//')[0].strip() for line in input_list if '"' in line and include_other_languages or any(x in line for x in language_keep_list)]
+        return [input_list[1].split('//')[0].strip()] + lines
+    
+    def ProcessStringsOrError(input_list):
+        lines = [line.split('//')[0].strip() for line in input_list if '"' in line]
+        if include_other_languages or any(x in input_list[1] for x in language_keep_list):
+            return [[('}\n' if add_curly_brackets else '') + input_list[1].split('//')[0].strip() + ('\n{' if add_curly_brackets else '')] + lines]
+    
+    return (
+        [ProcessOptionalInfo(input_list[i]) for i in GetOptionalInfo(input_list)],
+        [ProcessStringsOrError(input_list[i]) for i in GetStringsOrError(input_list)]
+    )
 
+def WriteFile(path, content, replace_lang = None):
+    def WriteNestedList(f, nested_list):
+        for element in nested_list:
+            if isinstance(element, list):
+                WriteNestedList(f, element)
+            elif element:
+                f.write(f"{element.replace('default', replace_lang) if replace_lang else str(element)}\n")
+    
+    with open(path, 'w') as f:
+        WriteNestedList(f, content)
 
-
-def WriteFile(path, data):
-    try:
-        with open(path, 'w') as file:
-            file.write(data)
-    except FileNotFoundError:
-        print("File not found")
-        return None
-
-
-def main():
-    path = 'sprites/jptrains.yagl'
-    list, records = ReadFile(path)
-    # print(list)
-    # MatchStrings(list)
-    strings = ''
-    record_align = max(len(str(record)) for record in records)
-    strings += f"{'Rc':<{record_align}}|String\n"
-    for i in MatchStrings(list):
-        for j in list[i]:
-            j = j.strip()
-            if j != '' and ('"' in j or 'optional_info' in j or 'error_message' in j or 'strings' in j):
-                strings += f"{records[i]:<{record_align}}|{j}\n"
-    WriteFile('text.txt', strings)
 
 if __name__ == "__main__":
-    main()
+    start_time = time.time()
+    path = sys.argv[1]
+    if len(sys.argv) < 2:
+        print("Usage: python getstrings.py <path>")
+        sys.exit(1)
+    input_list = OpenFile(path)
+
+    print('Time taken, Total time taken, Description')
+    # 打开文件
+    file_open_time = time.time()
+    print(f'{file_open_time - start_time:.2f}s, {file_open_time - start_time:.2f}s. Opened file: {path}')
+
+    # 分割记录
+    records = SplitRecords(input_list)
+    split_time = time.time()
+    print(f'{split_time - file_open_time:.2f}s, {split_time - start_time:.2f}s. Split into {len(records)} records')
+
+    # 写入文件
+    WriteFile('optional_info.txt', GetStrings(records), 'zh_CN')
+    write_time = time.time()
+    print(f'{write_time - split_time:.2f}s, {write_time - start_time:.2f}s. Generated optional_info.txt')
+
+    # 输出总用时
+    end_time = time.time()
+    print(f'---------- finish ----------\nTotal time taken: {end_time - start_time:.2f}s.')
