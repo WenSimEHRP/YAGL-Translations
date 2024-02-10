@@ -10,7 +10,8 @@ def OpenFile(path):
     except Exception as e:
         print(f"An error occurred: {e}")
         sys.exit(1)
-    
+
+
 def SplitRecords(input_list):
     record_match = re.compile(r'^ *// *Record #*\d* *$')
     index_list = [0] + [index for index, line in enumerate(input_list) if re.match(record_match, line)] + [len(input_list)]
@@ -42,13 +43,18 @@ def GetStrings(input_list, include_other_languages = False, add_curly_brackets =
         [ProcessStringsOrError(input_list[i]) for i in GetStringsOrError(input_list)]
     )
 
-def WriteFile(path, content, replace_lang = None):
+
+def WriteFile(path, content, language_keep_list, replace_lang = None):
     def WriteNestedList(f, nested_list):
         for element in nested_list:
             if isinstance(element, list):
                 WriteNestedList(f, element)
             elif element:
-                f.write(f"{element.replace('default', replace_lang) if replace_lang else str(element)}\n")
+                if replace_lang is not None:
+                    replaced_element = next((element.replace(lang, replace_lang) for lang in language_keep_list if lang in element), element)
+                    f.write(f"{replaced_element}\n")
+                else:
+                    f.write(f"{element}\n")
     
     with open(path, 'w') as f:
         WriteNestedList(f, content)
@@ -67,9 +73,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    input_list = OpenFile(args.input)
-
     print('Time taken, Total time taken, Description')
+
+    input_list = OpenFile(args.input)
     file_open_time = time.time()
     print(f'{file_open_time - start_time:.2f}s, {file_open_time - start_time:.2f}s. Opened file: {args.input}')
 
@@ -77,7 +83,7 @@ if __name__ == "__main__":
     split_time = time.time()
     print(f'{split_time - file_open_time:.2f}s, {split_time - start_time:.2f}s. Split into {len(records)} records')
 
-    WriteFile(args.output, GetStrings(records, args.all, args.curly, args.keep.split(',')), args.lang)
+    WriteFile(args.output, GetStrings(records, args.all, args.curly, args.keep.split(',')), args.keep.split(','), args.lang)
     write_time = time.time()
     print(f'{write_time - split_time:.2f}s, {write_time - start_time:.2f}s. Generated optional_info.txt')
 
