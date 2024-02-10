@@ -1,6 +1,11 @@
 sprites/*
 !sprites/*.md
 
+original_bin/*
+!original_bin/*.md
+
 *.grf
 *.yagl
 *.txt
+
+!bin/
