@@ -1,6 +1,7 @@
 import re
 import sys
 import time
+import argparse
 
 def OpenFile(path):
     try: 
@@ -27,11 +28,12 @@ def GetStrings(input_list, include_other_languages = False, add_curly_brackets =
         return [index for index, sublist in enumerate(input_list) if re.match(string_match, sublist[1])]
     
     def ProcessOptionalInfo(input_list):
-        lines = [line.split('//')[0].strip() for line in input_list if '"' in line and include_other_languages or any(x in line for x in language_keep_list)]
+        lines = [[line.split('//')[0].strip() if 'http' not in line else line.strip()] for line in input_list
+                 if '"' in line and include_other_languages or any(x in line for x in language_keep_list)]
         return [input_list[1].split('//')[0].strip()] + lines
     
     def ProcessStringsOrError(input_list):
-        lines = [line.split('//')[0].strip() for line in input_list if '"' in line]
+        lines = [[line.split('//')[0].strip() if 'http' not in line else line.strip()] for line in input_list if '"' in line]
         if include_other_languages or any(x in input_list[1] for x in language_keep_list):
             return [[('}\n' if add_curly_brackets else '') + input_list[1].split('//')[0].strip() + ('\n{' if add_curly_brackets else '')] + lines]
     
@@ -54,27 +56,30 @@ def WriteFile(path, content, replace_lang = None):
 
 if __name__ == "__main__":
     start_time = time.time()
-    path = sys.argv[1]
-    if len(sys.argv) < 2:
-        print("Usage: python getstrings.py <path>")
-        sys.exit(1)
-    input_list = OpenFile(path)
+
+    parser = argparse.ArgumentParser(description='This program is used for extracting strings from a yagl file')
+    parser.add_argument('-i', '--input', type=str, required=True, help='The path to the file to be processed')
+    parser.add_argument('-o', '--output', type=str, default='optional_info.txt', help='The path to the file to be written')
+    parser.add_argument('-l', '--lang', type=str, default=None, help='The language to be written')
+    parser.add_argument('-a', '--all', action='store_true', help='Include all languages')
+    parser.add_argument('-c', '--curly', action='store_true', help='Add curly brackets')
+    parser.add_argument('-k', '--keep', type=str, default='default,en_GB,en_US', help='Keep specific languages')
+
+    args = parser.parse_args()
+
+    input_list = OpenFile(args.input)
 
     print('Time taken, Total time taken, Description')
-    # 打开文件
     file_open_time = time.time()
-    print(f'{file_open_time - start_time:.2f}s, {file_open_time - start_time:.2f}s. Opened file: {path}')
+    print(f'{file_open_time - start_time:.2f}s, {file_open_time - start_time:.2f}s. Opened file: {args.input}')
 
-    # 分割记录
     records = SplitRecords(input_list)
     split_time = time.time()
     print(f'{split_time - file_open_time:.2f}s, {split_time - start_time:.2f}s. Split into {len(records)} records')
 
-    # 写入文件
-    WriteFile('optional_info.txt', GetStrings(records), 'zh_CN')
+    WriteFile(args.output, GetStrings(records, args.all, args.curly, args.keep.split(',')), args.lang)
     write_time = time.time()
     print(f'{write_time - split_time:.2f}s, {write_time - start_time:.2f}s. Generated optional_info.txt')
 
-    # 输出总用时
     end_time = time.time()
     print(f'---------- finish ----------\nTotal time taken: {end_time - start_time:.2f}s.')
