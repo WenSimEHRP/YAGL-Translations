@@ -1,4 +1,7 @@
 # YAGL-Translations
+
+## *Translated Files are in the BIN folder!!*
+
 [中文](docs/README_zh.md)
 
 This is a collection of OpenTTD NewGRFs with (Simplified Chinese) translations added after distribution.
